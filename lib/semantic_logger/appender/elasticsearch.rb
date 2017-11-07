@@ -139,7 +139,18 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
   end
 
   def reopen
-    @client = Elasticsearch::Client.new(@elasticsearch_args)
+    if @elasticsearch_args[:enable_aws_middleware]
+      require 'faraday_middleware/aws_signers_v4'
+      @client = Elasticsearch::Client.new(@elasticsearch_args) do |faraday|
+        # Right now we assume shared config
+        faraday.request :aws_signers_v4,
+          credentials: Aws.config[:credentials],
+          service_name: "semantic_logger",
+          region: Aws.config[:region]
+      end
+    else
+      @client = Elasticsearch::Client.new(@elasticsearch_args)
+    end
   end
 
   # Log to the index for today
