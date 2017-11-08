@@ -15,7 +15,7 @@ require 'date'
 #     url:      'http://localhost:9200'
 #   )
 class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
-  attr_accessor :url, :index, :type, :client, :flush_interval, :timeout_interval, :batch_size, :elasticsearch_args
+  attr_accessor :url, :index, :type, :use_logger_name_as_type, :client, :flush_interval, :timeout_interval, :batch_size, :elasticsearch_args
 
   # Create Elasticsearch appender over persistent HTTP(S)
   #
@@ -119,6 +119,7 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
   def initialize(url: 'http://localhost:9200',
                  index: 'semantic_logger',
                  type: 'log',
+                 use_logger_name_as_type: nil,
                  level: nil,
                  formatter: nil,
                  filter: nil,
@@ -130,6 +131,7 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
     @url                         = url
     @index                       = index
     @type                        = type
+    @use_logger_name_as_type     = use_logger_name_as_type
     @elasticsearch_args          = elasticsearch_args.dup
     @elasticsearch_args[:url]    = url if url && !elasticsearch_args[:hosts]
     @elasticsearch_args[:logger] = logger
@@ -191,7 +193,7 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
 
   def bulk_index(log)
     daily_index = log.time.strftime("#{index}-%Y.%m.%d")
-    {'index' => {'_index' => daily_index, '_type' => type}}
+    {'index' => {'_index' => daily_index, '_type' => use_logger_name_as_type ? log.name.downcase : type}}
   end
 
   def default_formatter
