@@ -15,7 +15,7 @@ require 'date'
 #     url:      'http://localhost:9200'
 #   )
 class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
-  attr_accessor :url, :index, :type, :use_logger_name_as_type, :client, :flush_interval, :timeout_interval, :batch_size, :elasticsearch_args
+  attr_accessor :url, :index, :datepattern, :client, :flush_interval, :timeout_interval, :batch_size, :elasticsearch_args
 
   # Create Elasticsearch appender over persistent HTTP(S)
   #
@@ -25,10 +25,6 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
   #     The final index appends the date so that indexes are used per day.
   #       I.e. The final index will look like 'semantic_logger-YYYY.MM.DD'
   #     Default: 'semantic_logger'
-  #
-  #   type: [String]
-  #     Document type to associate with logs when they are written.
-  #     Default: 'log'
   #
   #   level: [:trace | :debug | :info | :warn | :error | :fatal]
   #     Override the log level for this appender.
@@ -118,8 +114,7 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
   #     Default: 'GET'
   def initialize(url: 'http://localhost:9200',
                  index: 'semantic_logger',
-                 type: 'log',
-                 use_logger_name_as_type: nil,
+                 datepattern: '%Y.%m.%d',
                  level: nil,
                  formatter: nil,
                  filter: nil,
@@ -130,8 +125,7 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
 
     @url                         = url
     @index                       = index
-    @type                        = type
-    @use_logger_name_as_type     = use_logger_name_as_type
+    @datepattern                 = datepattern
     @elasticsearch_args          = elasticsearch_args.dup
     @elasticsearch_args[:url]    = url if url && !elasticsearch_args[:hosts]
     @elasticsearch_args[:logger] = logger
@@ -192,8 +186,8 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
   end
 
   def bulk_index(log)
-    daily_index = log.time.strftime("#{index}-%Y.%m.%d")
-    {'index' => {'_index' => daily_index, '_type' => use_logger_name_as_type ? log.name.downcase : type}}
+    daily_index = log.time.strftime("#{index}-#{datepattern}")
+    {'index' => {'_index' => daily_index }}
   end
 
   def default_formatter
