@@ -187,7 +187,7 @@ class SemanticLogger::Appender::Elasticsearch < SemanticLogger::Subscriber
 
   def bulk_index(log)
     daily_index = log.time.strftime("#{index}-#{datepattern}")
-    {'index' => {'_index' => daily_index }}
+    {'index' => {'_index' => daily_index, '_type' => 'log' }}
   end
 
   def default_formatter
